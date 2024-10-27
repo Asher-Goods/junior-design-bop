@@ -1,3 +1,4 @@
+//adding comment for git assignment--Alli
 #include <Wire.h> 
 #include <LiquidCrystal_I2C.h>// Constants for input pins
 
