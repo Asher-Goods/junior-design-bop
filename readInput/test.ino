@@ -35,85 +35,104 @@ int startStopState = 0;
 //bool gameActive = false;     // Whether the game is ongoing
 bool gameStarted = false;    // Whether the game has started
 
-Accelerometer Values
-const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
-int16_t accelerometer_x, accelerometer_y; // variables for accelerometer raw data
-int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
-String output;
-char tmp_str[7]; // temporary variable used in convert function
-char* convert_int16_to_str(int16_t i) { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
-  sprintf(tmp_str, "%6d", i);
-  return tmp_str;
-}
+// Accelerometer Values
+// const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
+// int16_t accelerometer_x, accelerometer_y; // variables for accelerometer raw data
+// int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
+// String output;
+// char tmp_str[7]; // temporary variable used in convert function
+// char* convert_int16_to_str(int16_t i) { // converts int16 to string. Moreover, resulting strings will have the same length in the debug monitor.
+//   sprintf(tmp_str, "%6d", i);
+//   return tmp_str;
+// }
 
-void setup() {
-  Serial.begin(9600);
+//void setup() {
+  // Serial.begin(9600);
 
-  lcd.begin(16,2);//Defining 16 columns and 2 rows of lcd display
-  lcd.backlight();//To Power ON the back light
+  // lcd.begin(16,2);//Defining 16 columns and 2 rows of lcd display
+  // lcd.backlight();//To Power ON the back light
 
   // Accelerometer Setup
-  Wire.begin();
-  Wire.beginTransmission(MPU_ADDR); // Begins a transmission to the I2C slave (GY-521 board)
-  Wire.write(0x6B); // PWR_MGMT_1 register
-  Wire.write(0); // set to zero (wakes up the MPU-6050)
-  Wire.endTransmission(true);
+  // Wire.begin();
+  // Wire.beginTransmission(MPU_ADDR); // Begins a transmission to the I2C slave (GY-521 board)
+  // Wire.write(0x6B); // PWR_MGMT_1 register
+  // Wire.write(0); // set to zero (wakes up the MPU-6050)
+  // Wire.endTransmission(true);
 
   // Initialize pins
   //pinMode(ledPin, OUTPUT);
   //pinMode(buttonPin, INPUT);
-  pinMode(startButtonPin, INPUT);
-  pinMode(resetButtonPin, INPUT);
-  pinMode(button1, INPUT_PULLUP);
-  pinMode(startStopButt, INPUT_PULLUP);
-  pinMode(1, OUTPUT);
+  // pinMode(startButtonPin, INPUT);
+  // pinMode(resetButtonPin, INPUT);
+  // pinMode(button1, INPUT_PULLUP);
+  // pinMode(startStopButt, INPUT_PULLUP);
+  // pinMode(1, OUTPUT);
+//}
+
+#include <DFRobotDFPlayerMini.h>
+#include <SoftwareSerial.h>
+
+SoftwareSerial mySerial(10, 11); // RX, TX
+DFRobotDFPlayerMini myDFPlayer;
+
+void setup() {
+  mySerial.begin(9600);
+  Serial.begin(9600);
+  if (!myDFPlayer.begin(mySerial)) {
+    Serial.println("Unable to begin: Please recheck the wiring!");
+    while (true);
+  }
+  myDFPlayer.volume(20); // Set volume from 0 to 30
+  myDFPlayer.play(1); // Play the first mp3 file in your SD card
 }
 
+
 void loop() {
+
   // Read the states of the start and reset buttons
   startButtonState = digitalRead(startButtonPin);
   resetButtonState = digitalRead(resetButtonPin);
   button1State = digitalRead(button1);
-  sensorValue = analogRead(analogInPin);
-  startStopState = digitalRead(startStopButt);
+  // sensorValue = analogRead(analogInPin);
+  // startStopState = digitalRead(startStopButt);
 
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
-  Wire.endTransmission(false); // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
-  Wire.requestFrom(MPU_ADDR, 7*2, true); // request a total of 7*2=14 registers
-  accelerometer_x = Wire.read()<<8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
-  accelerometer_y = Wire.read()<<8 | Wire.read(); 
+  // Wire.beginTransmission(MPU_ADDR);
+  // Wire.write(0x3B); // starting with register 0x3B (ACCEL_XOUT_H) [MPU-6000 and MPU-6050 Register Map and Descriptions Revision 4.2, p.40]
+  // Wire.endTransmission(false); // the parameter indicates that the Arduino will send a restart. As a result, the connection is kept active.
+  // Wire.requestFrom(MPU_ADDR, 7*2, true); // request a total of 7*2=14 registers
+  // accelerometer_x = Wire.read()<<8 | Wire.read(); // reading registers: 0x3B (ACCEL_XOUT_H) and 0x3C (ACCEL_XOUT_L)
+  // accelerometer_y = Wire.read()<<8 | Wire.read(); 
 
-  lcd.setCursor(0,0); //Defining positon to write from first row,first column .
+  // lcd.setCursor(0,0); //Defining positon to write from first row,first column .
 
-  // Start button logic
-  if (startButtonState == HIGH) {
-      gameStarted = true;
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Game Started");
-      digitalWrite(1, HIGH);
-  }
+  // // Start button logic
+  // if (startButtonState == HIGH) {
+  //     gameStarted = true;
+  //     lcd.clear();
+  //     lcd.setCursor(0, 0);
+  //     lcd.print("Game Started");
+  //     digitalWrite(1, HIGH);
+  // }
 
-  // Reset button logic
-  if (resetButtonState == HIGH) {
-    lcd.clear();//Clean the screen
-    gameStarted = false;
-    //resetGame();  // Reset the game to initial state
-  }
+  // // Reset button logic
+  // if (resetButtonState == HIGH) {
+  //   lcd.clear();//Clean the screen
+  //   gameStarted = false;
+  //   //resetGame();  // Reset the game to initial state
+  // }
 
-  if(startStopState == LOW){
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Game Reset");
-  }
+  // if(startStopState == LOW){
+  //     lcd.clear();
+  //     lcd.setCursor(0, 0);
+  //     lcd.print("Game Reset");
+  // }
 
-  // Button display logic
-  if (button1State == LOW){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Button 1");
-  }
+  // // Button display logic
+  // if (button1State == LOW){
+  //   lcd.clear();
+  //   lcd.setCursor(0, 0);
+  //   lcd.print("Button 1");
+  // }
 
   // // Check for change in potentiometer value
   // if (abs(sensorValue - previousSensorValue) >= 50) {
