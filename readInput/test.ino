@@ -83,7 +83,7 @@ void setup() {
 }
 
 void loop() {
-  //playSelected(1);
+  playSelected(1);
   delay(100000);
 
   // Read the states of the start and reset buttons
