@@ -15,104 +15,95 @@ SoftwareSerial mySerial(0, 1);
 # define Acknowledge 0x00 //Returns info with command 0x41 [0x01: info, 0x00: no info]
 # define ACTIVATED LOW
 
-//Music module
-int buttonNext = 2;
-int buttonPause = 3;
-int buttonPrevious = 4;
-boolean isPlaying = false;
-
 //I2C pins declaration
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE); 
 
-const int analogInPin = 1;  // Potentiometer pin
-
-// Spinny button
-const int button1 = 5;
-
-//This is acutally the rest button
-const int startStopButt = 4;
+// Input button declarations
+const int twisty = A1;    //pins need to be switched         // Potentiometer pin -- this is twisty input
+const int slider = A0;             // Potentiometer pin -- this is slider
+const int button1 = 5;            // Spinny button
+const int resetButt = 4;          // Reset Game Button
 const int microphonePin = A3;
 
-int previousSensorValue = 0;  
-
 // Game variables
-int sensorValue = 0;         // Potentiometer value
+int twistyValue = 0;         // Potentiometer value
 int button1State = 0;
-int startStopState = 0;
+int resetValue = 0;
 int microphoneState = 0;
 int state = 0;
 float volts;
+int previousTwistyState = 0;  
 
 // Accelerometer Values
-const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
-int16_t accelerometer_x, accelerometer_y; // variables for accelerometer raw data
-int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
-String output;
-char tmp_str[7]; // temporary variable used in convert function
-char* convert_int16_to_str(int16_t i) { // converts int16 to string. resulting strings will have the same length in the debug monitor.
-  sprintf(tmp_str, "%6d", i);
-  return tmp_str;
-}
+// const int MPU_ADDR = 0x68; // I2C address of the MPU-6050. If AD0 pin is set to HIGH, the I2C address will be 0x69.
+// int16_t accelerometer_x, accelerometer_y; // variables for accelerometer raw data
+// int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
+// String output;
+// char tmp_str[7]; // temporary variable used in convert function
+// char* convert_int16_to_str(int16_t i) { // converts int16 to string. resulting strings will have the same length in the debug monitor.
+//   sprintf(tmp_str, "%6d", i);
+//   return tmp_str;
+// }
 
 void setup() {
-  Serial.begin(9600);
+  //Serial.begin(9600);
+  mySerial.begin(9600);
+  delay(1000);
+  setVolume(30);
 
   lcd.begin(16,2);
   lcd.backlight();
 
   //Accelerometer Setup
-  Wire.begin();
-  Wire.beginTransmission(MPU_ADDR); 
-  Wire.write(0x6B);
-  Wire.write(0);
-  Wire.endTransmission(true);
+  // Wire.begin();
+  // Wire.beginTransmission(MPU_ADDR); 
+  // Wire.write(0x6B);
+  // Wire.write(0);
+  // Wire.endTransmission(true);
 
   //Initialize pins
   pinMode(button1, INPUT_PULLUP);
-  pinMode(startStopButt, INPUT_PULLUP);
+  pinMode(resetButt, INPUT_PULLUP);
   pinMode(1, OUTPUT);
+  //pinMode(twisty, INPUT);
 
-  // Music setup
-  mySerial.begin(9600);
-  delay(1000);
-  setVolume(30);
-
-  // Microphone
+  // // Microphone
   pinMode(microphonePin, INPUT);
 
 }
 
 void loop() {
-  playSelected(1);
-  delay(100000);
+  //playSelected(1);
+  // delay(100000);
 
-  // Read the states of the start and reset buttons
+
+  //Read the states of the start and reset buttons
   button1State = digitalRead(button1);
-  sensorValue = analogRead(analogInPin);
-  startStopState = digitalRead(startStopButt);
+  twistyValue = analogRead(twisty);
+  resetValue = digitalRead(resetButt);
   microphoneState = analogRead(microphonePin);
 
   lcd.backlight();
-  Wire.beginTransmission(MPU_ADDR);
-  Wire.write(0x3B); 
-  Wire.endTransmission(false); 
-  Wire.requestFrom(MPU_ADDR, 7*2, true); 
-  accelerometer_x = Wire.read()<<8 | Wire.read(); 
-  accelerometer_y = Wire.read()<<8 | Wire.read(); 
+  // Wire.beginTransmission(MPU_ADDR);
+  // Wire.write(0x3B); 
+  // Wire.endTransmission(false); 
+  // Wire.requestFrom(MPU_ADDR, 7*2, true); 
+  // accelerometer_x = Wire.read()<<8 | Wire.read(); 
+  // accelerometer_y = Wire.read()<<8 | Wire.read(); 
 
   lcd.setCursor(0,0); 
 
-  if (microphoneState == HIGH){
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("NOISE");
-  }
+  // if (microphoneState == HIGH){
+  //   lcd.clear();
+  //   lcd.setCursor(0, 0);
+  //   lcd.print("NOISE");
+  // }
 
-  if(startStopState == LOW){
-      lcd.clear();
-      lcd.setCursor(0, 0);
-      lcd.print("Game Reset");
-  }
+  // if(resetValue == LOW){
+  //     lcd.clear();
+  //     lcd.setCursor(0, 0);
+  //     lcd.print("Game Reset");
+  // }
 
   // Button display logic
   if (button1State == LOW){
@@ -121,32 +112,35 @@ void loop() {
     lcd.print("Button 1");
   }
 
+  lcd.print(button1State);
+
+  // lcd.print(twistyValue);
   // Check for change in potentiometer value
-  if (abs(sensorValue - previousSensorValue) >= 50) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    lcd.print("Potentiometer:");
-    lcd.setCursor(0, 1);
-    lcd.print(sensorValue);
+  // if (abs(twistyValue - previousTwistyState) >= 20) {
+  //   lcd.clear();
+  //   lcd.setCursor(0, 0);
+  //   lcd.print("Potentiometer:");
+  //   lcd.setCursor(0, 1);
+  //   lcd.print(twistyValue);
     
-    // Update previous sensor value to the current value
-    previousSensorValue = sensorValue;
-  }
+  //   // Update previous sensor value to the current value
+  //   previousTwistyState = twistyValue;
+  // }
 
   // Change in accelerometer value
-  if (abs(accelerometer_x - previous_accelerometer_x) >= 2000 || abs(accelerometer_y - previous_accelerometer_y) >= 2000) {
-    lcd.clear();
-    lcd.setCursor(0, 0);
-    output = "";
-    output += convert_int16_to_str(accelerometer_x);
-    output += " ";
-    output += convert_int16_to_str(accelerometer_y);
-    //lcd.print(output);
+  // if (abs(accelerometer_x - previous_accelerometer_x) >= 2000 || abs(accelerometer_y - previous_accelerometer_y) >= 2000) {
+  //   lcd.clear();
+  //   lcd.setCursor(0, 0);
+  //   output = "";
+  //   output += convert_int16_to_str(accelerometer_x);
+  //   output += " ";
+  //   output += convert_int16_to_str(accelerometer_y);
+  //   //lcd.print(output);
 
-    // Update previous values to the new values
-    previous_accelerometer_x = accelerometer_x;
-    previous_accelerometer_y = accelerometer_y;
-  }
+  //   // Update previous values to the new values
+  //   previous_accelerometer_x = accelerometer_x;
+  //   previous_accelerometer_y = accelerometer_y;
+  // }
 
   delay(5);
 }
@@ -181,19 +175,17 @@ void execute_CMD(byte CMD, byte Par1, byte Par2)
   }
 }
 
-
 //MICROPHONE LOGIC THAT NEEDS TO BE ADDED
-// void loop() {
-//   volts = analogRead(A3); // returns bit (0= 0 volts, 1024=5.0 volts)
-//   volts = volts * 5.0 / 1024.0; // convert bits to volts
+void microPhone() {
+  volts = analogRead(A3); // returns bit (0= 0 volts, 1024=5.0 volts)
+  volts = volts * 5.0 / 1024.0; // convert bits to volts
 
+  // now do your test
+  if (volts >= 2.0) {
+  digitalWrite(8, HIGH);
+  }
+  else {
+  digitalWrite(8, LOW);
 
-//   // now do your test
-//   if (volts >= 2.0) {
-//   digitalWrite(8, HIGH);
-//   }
-//   else {
-//   digitalWrite(8, LOW);
-
-//   }
-// }
+  }
+}
