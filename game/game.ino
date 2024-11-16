@@ -30,8 +30,8 @@ int spinnyButtValue = 0;
 int resetValue = 0;
 int microphoneValue = 0;
 
-int previousTwistyValue = 0;
-int previousSliderValue = 0;
+int previousTwistyValue;
+int previousSliderValue;
 
 // game states
 enum GameState { PITCH_IT, TURN_IT_UP, SHOUT_IT, SPIN_IT };
@@ -78,7 +78,6 @@ void setup()
 
     // initialize previous values 
     setPreviousValue();
-    
 }
 
 void loop()
@@ -185,6 +184,7 @@ void readValues(void)
     microphoneValue = analogRead(microphonePin);
     spinnyButtValue = digitalRead(spinnyButt);
     resetValue      = digitalRead(resetButt);
+
     // Read accelerometer values
     Wire.beginTransmission(MPU_ADDR);
     Wire.write(0x3B);
@@ -234,29 +234,75 @@ bool handleAccelerometer(void)
     return valueChange;
 }
 
-// check if twisty potentiometer changed
 bool handleTwisty(void)
 {
-    int thresholdValue = 100;
+    int thresholdValue = 10;
     bool valueChange = (abs(twistyValue - previousTwistyValue) >= thresholdValue);
+
     if (valueChange)
     {
         previousTwistyValue = twistyValue;
     }
-    // include logic for proportional volume change
     return valueChange;
 }
+
 
 // check if slider potentiometer changed
 bool handleSlider(void)
 {
-    int thresholdValue = 1;
-    bool valueChange = (abs(sliderValue - previousSliderValue) >= thresholdValue);
-    if (valueChange)
+    int thresholdValue =  1;
+    bool valueChange = 0;
+
+    readValues();
+    // bool valueChange = (abs(sliderValue - previousSliderValue) >= thresholdValue);
+    // if (valueChange)
+    // {
+    //     previousSliderValue = sliderValue;
+    // }
+    // // include logic for proportional pitch change
+    // return valueChange;
+
+    if (previousSliderValue == 1020)
     {
+      if (sliderValue != previousSliderValue)
+      {
+        valueChange = 1;
         previousSliderValue = sliderValue;
+      }
     }
-    // include logic for proportional pitch change
+
+    else if (previousSliderValue == 1023)
+    {
+      if (sliderValue != previousSliderValue)
+      {
+        valueChange = 1;
+        previousSliderValue = sliderValue;
+      }
+    }
+
+    else if (previousSliderValue == 1021)
+    {
+      if (sliderValue != previousSliderValue)
+      {
+        valueChange = 1;
+        previousSliderValue = sliderValue;
+      }
+    }
+
+    // else if (previousSliderValue == 1022)
+    // {
+    //   if (sliderValue != previousSliderValue)
+    //   {
+    //     valueChange = 1;
+    //     previousSliderValue = sliderValue;
+    //   }
+    // }
+
+    else{
+      valueChange = 0;
+      previousSliderValue = sliderValue;
+    }
+
     return valueChange;
 }
 
@@ -300,13 +346,13 @@ void setVolume(int volume)
 
 void setPreviousValue(void)
 {
-  readValues();
-  int previousTwistyValue = 0;
-  int previousSliderValue = 0;
-  previous_accelerometer_x = accelerometer_x;
-  previous_accelerometer_y = accelerometer_y;
-  
+    readValues();
+    previousTwistyValue = twistyValue;
+    previousSliderValue = sliderValue;
+    previous_accelerometer_x = accelerometer_x;
+    previous_accelerometer_y = accelerometer_y;
 }
+
 
 void execute_CMD(byte CMD, byte Par1, byte Par2)
 // Excecute the command and parameters
@@ -353,6 +399,7 @@ void resetGame() {
   lcd.print("Game Resetting!");
   delay(1000);
   randomizeStates();  // Shuffle states for a new game
+  setPreviousValue();
   successCount = 0;   // Reset the index to the start of the new sequence
 }
 
