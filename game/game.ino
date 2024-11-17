@@ -15,6 +15,7 @@ SoftwareSerial mySerial(0, 1);
 
 // I2C pins declaration for LCD Screen
 LiquidCrystal_I2C lcd(0x27, 2, 1, 0, 4, 5, 6, 7, 3, POSITIVE);
+DFRobotDFPlayerMini myDFPlayer;
 
 // Input button declarations
 const int twisty = A0;        // Potentiometer pin -- this is twisty input
@@ -51,12 +52,16 @@ const int MPU_ADDR = 0x68;
 int16_t accelerometer_x, accelerometer_y;
 int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
 
+// Variables for song
+int countTwist = 0;
+int countSlider = 0;
+int countSpin = 0;
+int countPitch = 0;
 
 void setup()
 {
     mySerial.begin(9600);
     delay(1000);
-    setVolume(30);
 
     // LCD Setup
     lcd.begin(16, 2);
@@ -76,6 +81,15 @@ void setup()
     pinMode(slider, INPUT);
     pinMode(microphonePin, INPUT);
 
+    if (!myDFPlayer.begin(mySerial, /*isACK = */true, /*doReset = */true)) {  //Use serial to communicate with mp3.
+      while(true){
+        delay(0); // Code to compatible with ESP8266 watch dog.
+      }
+    }
+
+    myDFPlayer.volume(30);
+    myDFPlayer.play(1);
+
     // initialize previous values 
     setPreviousValue();
 }
@@ -90,7 +104,7 @@ void loop()
     resetGame();
     return;
   }
-
+  //playSelected(1);
 
   // Run current game state logic based on the randomized state array
   switch (states[successCount]) {
@@ -108,8 +122,10 @@ void loop()
       }
       else if (result == 1)
       {
+        myDFPlayer.play(2);
         lcd.clear();
         lcd.print("Success!");
+        countPitch++;
         nextState();
       }
       break;
@@ -130,6 +146,7 @@ void loop()
         lcd.clear();
         lcd.print("Success!");
         nextState();
+        countTwist++;
       }
       break;
     case SHOUT_IT:
@@ -165,6 +182,18 @@ void loop()
       }
       else if (result == 1)
       {
+        //myDFPlayer.play(8);
+        if (countSpin == 0){
+          myDFPlayer.play(8);
+          countSpin++;
+          break;
+        }
+        if (countSpin == 1)
+        {
+          myDFPlayer.play(5);
+          countSpin = 0;
+        }
+
         lcd.clear();
         lcd.print("Success!");
         nextState();
@@ -328,22 +357,6 @@ bool handleSpinnyButt(void)
     return spinnyButtValue == LOW;
 }
 
-void playSelected(byte track)
-{
-    execute_CMD(0x3F, 0, track);
-    delay(500);
-    setVolume(20);
-    delay(500);
-    execute_CMD(0x11, 0, 1);
-    delay(500);
-}
-
-void setVolume(int volume)
-{
-    execute_CMD(0x06, 0, volume); // Set the volume (0x00~0x30)
-    delay(2000);
-}
-
 void setPreviousValue(void)
 {
     readValues();
@@ -353,22 +366,6 @@ void setPreviousValue(void)
     previous_accelerometer_y = accelerometer_y;
 }
 
-
-void execute_CMD(byte CMD, byte Par1, byte Par2)
-// Excecute the command and parameters
-{
-    // Calculate the checksum (2 bytes)
-    word checksum = -(Version_Byte + Command_Length + CMD + Acknowledge + Par1 + Par2);
-    // Build the command line
-    byte Command_line[10] = {Start_Byte, Version_Byte, Command_Length, CMD, Acknowledge,
-                             Par1, Par2, highByte(checksum), lowByte(checksum), End_Byte};
-    // Send the command line to the module
-    for (byte k = 0; k < 10; k++)
-    {
-        mySerial.write(Command_line[k]);
-    }
-}
-
 // State machine methods
 // Move to the next state in the randomized sequence
 void nextState() {
@@ -376,8 +373,9 @@ void nextState() {
   setPreviousValue();
   delay(1000);
   if (successCount >= 5) {  // If all states are completed, reset game
-    gameRecap();
-    resetGame();
+    // gameRecap();
+    // resetGame();
+    successCount =0;
   }
 }
 
@@ -396,6 +394,7 @@ void randomizeStates() {
 // Reset the game
 void resetGame() {
   lcd.clear();
+  myDFPlayer.play(1);
   lcd.print("Game Resetting!");
   delay(1000);
   randomizeStates();  // Shuffle states for a new game
