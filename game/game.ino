@@ -41,8 +41,7 @@ int successCount = 0;
 int result;
 
 // Music variables
-int song = 1;
-int volume = 30;
+//int song = 1;
 int pitch;
 
 // Accelerometer Values
@@ -53,7 +52,7 @@ int16_t accelerometer_x, accelerometer_y;
 int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
 
 // Variables for song
-int countTwist = 0;
+int song = 0;
 int countSlider = 0;
 int countSpin = 0;
 int countPitch = 0;
@@ -87,9 +86,10 @@ void setup()
       }
     }
 
-    myDFPlayer.volume(30);
+    myDFPlayer.volume(5);
     myDFPlayer.play(1);
-
+    song = 1;
+    
     // initialize previous values 
     setPreviousValue();
 }
@@ -122,10 +122,21 @@ void loop()
       }
       else if (result == 1)
       {
-        myDFPlayer.play(2);
+        //myDFPlayer.play(2);
+        if (song == 1){
+          myDFPlayer.play(2);
+        }
+        if (song == 8)
+        {
+          myDFPlayer.play(7);
+        }
+        if (song == 5)
+        {
+          myDFPlayer.play(4);
+        }
         lcd.clear();
         lcd.print("Success!");
-        countPitch++;
+        //countPitch++;
         nextState();
       }
       break;
@@ -146,7 +157,6 @@ void loop()
         lcd.clear();
         lcd.print("Success!");
         nextState();
-        countTwist++;
       }
       break;
     case SHOUT_IT:
@@ -183,16 +193,6 @@ void loop()
       else if (result == 1)
       {
         //myDFPlayer.play(8);
-        if (countSpin == 0){
-          myDFPlayer.play(8);
-          countSpin++;
-          break;
-        }
-        if (countSpin == 1)
-        {
-          myDFPlayer.play(5);
-          countSpin = 0;
-        }
 
         lcd.clear();
         lcd.print("Success!");
@@ -259,6 +259,18 @@ bool handleAccelerometer(void)
     {
         previous_accelerometer_x = accelerometer_x;
         previous_accelerometer_y = accelerometer_y;
+
+        if (countSpin == 0){
+          myDFPlayer.play(8);
+          song = 8;
+        }
+        if (countSpin == 1)
+        {
+          myDFPlayer.play(5);
+          song = 5;
+        }
+
+        countSpin++;
     }
     return valueChange;
 }
@@ -283,15 +295,8 @@ bool handleSlider(void)
     bool valueChange = 0;
 
     readValues();
-    // bool valueChange = (abs(sliderValue - previousSliderValue) >= thresholdValue);
-    // if (valueChange)
-    // {
-    //     previousSliderValue = sliderValue;
-    // }
-    // // include logic for proportional pitch change
-    // return valueChange;
 
-    if (previousSliderValue == 1020)
+    if (previousSliderValue <= 1020)
     {
       if (sliderValue != previousSliderValue)
       {
@@ -299,7 +304,6 @@ bool handleSlider(void)
         previousSliderValue = sliderValue;
       }
     }
-
     else if (previousSliderValue == 1023)
     {
       if (sliderValue != previousSliderValue)
@@ -308,7 +312,6 @@ bool handleSlider(void)
         previousSliderValue = sliderValue;
       }
     }
-
     else if (previousSliderValue == 1021)
     {
       if (sliderValue != previousSliderValue)
@@ -317,20 +320,9 @@ bool handleSlider(void)
         previousSliderValue = sliderValue;
       }
     }
-
-    // else if (previousSliderValue == 1022)
-    // {
-    //   if (sliderValue != previousSliderValue)
-    //   {
-    //     valueChange = 1;
-    //     previousSliderValue = sliderValue;
-    //   }
-    // }
-
-    else{
-      valueChange = 0;
-      previousSliderValue = sliderValue;
-    }
+    
+    previousSliderValue = sliderValue;
+    
 
     return valueChange;
 }
