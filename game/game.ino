@@ -39,10 +39,11 @@ enum GameState { PITCH_IT, TURN_IT_UP, SHOUT_IT, SPIN_IT };
 GameState states[] = { PITCH_IT, TURN_IT_UP, SHOUT_IT, SPIN_IT };
 int successCount = 0;
 int result;
+bool gameStart = false;
+int currentVolume;
 
 // Music variables
-//int song = 1;
-int pitch;
+int pitch = 0;
 
 // Accelerometer Values
 // I2C address of the MPU-6050. If   pin is set to HIGH, the I2C address will be 0x69.
@@ -53,9 +54,7 @@ int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
 
 // Variables for song
 int song = 0;
-int countSlider = 0;
 int countSpin = 0;
-int countPitch = 0;
 
 void setup()
 {
@@ -86,8 +85,7 @@ void setup()
       }
     }
 
-    myDFPlayer.volume(5);
-    myDFPlayer.play(1);
+    myDFPlayer.volume(15);
     song = 1;
     
     // initialize previous values 
@@ -98,13 +96,26 @@ void loop()
 {
   // read in all values
   readValues();
+
   // Check for reset
   if (resetValue == LOW) {
-    gameRecap();
-    resetGame();
+    if (gameStart == 0){
+      // Start game
+      startGame();
+    }
+    else{
+      gameRecap();
+      resetGame();
+    }
     return;
   }
-  //playSelected(1);
+
+  if(gameStart == 0) {
+    lcd.clear();
+    lcd.print("Press the button start the game!");
+    delay(50);
+    return;
+  }
 
   // Run current game state logic based on the randomized state array
   switch (states[successCount]) {
@@ -112,6 +123,7 @@ void loop()
       result = testValues(1);
       lcd.clear();
       lcd.print("Pitch it!");
+      lcd.print(song);
       if (result == 0) 
       {
         lcd.clear();
@@ -122,18 +134,75 @@ void loop()
       }
       else if (result == 1)
       {
-        //myDFPlayer.play(2);
+        // charlie pitch changes
         if (song == 1){
-          myDFPlayer.play(2);
+          if(pitch == 1) {
+            song = 2;
+            myDFPlayer.play(song);
+          } else if(pitch == -1) {
+            song = 3;
+            myDFPlayer.play(song);
+          }
         }
-        if (song == 8)
-        {
-          myDFPlayer.play(7);
+        if (song == 2){
+          if(pitch == -1) {
+            song = 1;
+            myDFPlayer.play(song);
+          }
         }
+        if (song == 3){
+          if(pitch == 1) {
+            song = 1;
+            myDFPlayer.play(song);
+          }
+        }
+        // pitbull pitch changes
         if (song == 5)
         {
-          myDFPlayer.play(4);
+          if(pitch == 1) {
+            song = 9;
+            myDFPlayer.play(song);
+          } else if(pitch == -1) {
+            song = 4;
+            myDFPlayer.play(song);
+          }
         }
+        if (song == 4){
+          if(pitch == -1) {
+            song = 5;
+            myDFPlayer.play(song);
+          }
+        }
+        if (song == 9){
+          if(pitch == 1) {
+            song = 5;
+            myDFPlayer.play(song);
+          }
+        }
+        // alabama pitch change
+        if (song == 8)
+        {
+          if(pitch == 1) {
+            song = 7;
+            myDFPlayer.play(song);
+          } else if(pitch == -1) {
+            song = 6;
+            myDFPlayer.play(song);
+          }
+        }
+        if (song == 7){
+            myDFPlayer.play(song);
+          if(pitch == -1) {
+            song = 8;
+          }
+        }
+        if (song == 6){
+          if(pitch == 1) {
+            song = 8;
+            myDFPlayer.play(song);
+          }
+        }
+        
         lcd.clear();
         lcd.print("Success!");
         //countPitch++;
@@ -143,6 +212,7 @@ void loop()
     case TURN_IT_UP:
       lcd.clear();
       lcd.print("Turn it up!");
+      lcd.print(song);
       result = testValues(2);
       if (result == 0) 
       {
@@ -181,6 +251,7 @@ void loop()
     case SPIN_IT:
       lcd.clear();
       lcd.print("Spin it!");
+      lcd.print(song);
       result = testValues(5);
       if (result == 0) 
       {
@@ -192,7 +263,19 @@ void loop()
       }
       else if (result == 1)
       {
-        //myDFPlayer.play(8);
+        switch(countSpin) {
+          case 0 :
+          song = 5;
+          break;
+          case 1 :
+          song = 8;
+          break;
+          default :
+          song = 1;
+          break;
+        }
+        myDFPlayer.play(song);
+        countSpin++;
 
         lcd.clear();
         lcd.print("Success!");
@@ -249,6 +332,19 @@ int testValues(int expectedInput)
     // If no inputs return 2
     return 2;
 }
+
+void startGame(void)
+{
+  gameStart = 1;
+  lcd.clear();
+  lcd.print("Starting game...");
+  delay(1000);
+  randomizeStates();  // Shuffle states for a new game
+  setPreviousValue();
+  myDFPlayer.play(song);
+  successCount = 0;   // Rfeset the index to the start of the new sequence
+
+}
 // check if accelerometer value changed
 bool handleAccelerometer(void)
 {
@@ -259,31 +355,27 @@ bool handleAccelerometer(void)
     {
         previous_accelerometer_x = accelerometer_x;
         previous_accelerometer_y = accelerometer_y;
-
-        if (countSpin == 0){
-          myDFPlayer.play(8);
-          song = 8;
-        }
-        if (countSpin == 1)
-        {
-          myDFPlayer.play(5);
-          song = 5;
-        }
-
-        countSpin++;
-    }
+      }
     return valueChange;
 }
 
 bool handleTwisty(void)
 {
-    int thresholdValue = 10;
-    bool valueChange = (abs(twistyValue - previousTwistyValue) >= thresholdValue);
+    int thresholdValue = 100;
+    int change = twistyValue - previousTwistyValue;
+    bool valueChange = (abs(change) >= thresholdValue);
 
     if (valueChange)
     {
         previousTwistyValue = twistyValue;
     }
+
+    if (change < 0) {
+      pitch = 1;
+    } else {
+      pitch = -1;
+    }
+
     return valueChange;
 }
 
@@ -291,40 +383,27 @@ bool handleTwisty(void)
 // check if slider potentiometer changed
 bool handleSlider(void)
 {
-    int thresholdValue =  1;
-    bool valueChange = 0;
+   int thresholdValue =  100;
 
     readValues();
+    bool valueChange = (abs(sliderValue - previousSliderValue) >= thresholdValue);
+    if (valueChange)
+    {
+        if (previousSliderValue > sliderValue)
+        {
+          myDFPlayer.volume(15);
+        }
+        if (previousSliderValue < sliderValue)
+        {
+          myDFPlayer.volume(20
+          );
+        }
 
-    if (previousSliderValue <= 1020)
-    {
-      if (sliderValue != previousSliderValue)
-      {
-        valueChange = 1;
         previousSliderValue = sliderValue;
-      }
     }
-    else if (previousSliderValue == 1023)
-    {
-      if (sliderValue != previousSliderValue)
-      {
-        valueChange = 1;
-        previousSliderValue = sliderValue;
-      }
-    }
-    else if (previousSliderValue == 1021)
-    {
-      if (sliderValue != previousSliderValue)
-      {
-        valueChange = 1;
-        previousSliderValue = sliderValue;
-      }
-    }
-    
-    previousSliderValue = sliderValue;
-    
 
     return valueChange;
+
 }
 
 // check if microphone passes threshold value
@@ -386,12 +465,14 @@ void randomizeStates() {
 // Reset the game
 void resetGame() {
   lcd.clear();
-  myDFPlayer.play(1);
   lcd.print("Game Resetting!");
   delay(1000);
   randomizeStates();  // Shuffle states for a new game
   setPreviousValue();
+  gameStart = 0;
   successCount = 0;   // Reset the index to the start of the new sequence
+  myDFPlayer.volume(15);
+  song = 1;
 }
 
 void gameRecap() {
