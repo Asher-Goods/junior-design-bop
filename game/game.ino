@@ -57,6 +57,11 @@ int16_t previous_accelerometer_x, previous_accelerometer_y = 0;
 int song = 0;
 int countSpin = 0;
 
+// Timer Variable
+unsigned long timerStart;   // Stores the time when the timer starts
+int timeLimit = 10000;      // Initial time limit in milliseconds (10 seconds)
+bool timerActive = false;   // Flag to indicate if the timer is running
+
 void setup()
 {
     mySerial.begin(9600);
@@ -146,6 +151,29 @@ void loop() {
       break;
   }
 
+  
+
+
+  if (timerActive) {
+    unsigned long elapsedTime = millis() - timerStart;
+
+    if (elapsedTime >= timeLimit) {
+      // Time ran out
+      lcd.clear();
+      lcd.print("Time's up!");
+      delay(2000);
+      gameRecap();
+      resetGame();
+      return;
+    } else {
+      // Update the remaining time on the display
+      lcd.setCursor(0, 1);
+      lcd.print("Time left: ");
+      lcd.print((timeLimit - elapsedTime) / 1000);
+      lcd.print("s ");
+    }
+  }
+
   delay(100); // Small delay to allow for button debouncing
 }
 
@@ -161,9 +189,13 @@ void handleResult(int result) {
     lcd.clear();
     lcd.print("Success!");
     if(states[successCount] == SPIN_IT) handleSpin();
+    delay(1000);
     if(states[successCount] == PITCH_IT) handlePitchChange();
     nextState(); // Move to the next state
+    if (timeLimit > 3000) timeLimit -= 1000;
+
   }
+  //timerActive = false;
 }
 
 
@@ -223,6 +255,13 @@ int testValues(int expectedInput)
       return 0; 
     }
 
+    //   unsigned long currentMillis = millis();
+
+    // if (currentMillis - previousMillis >= interval) {
+    //   // save the last time you blinked the LED
+    //   previousMillis = currentMillis;
+    // }
+
     // If no inputs return 2
     return 2;
 }
@@ -238,6 +277,8 @@ void startGame(void)
   myDFPlayer.play(song);
   successCount = 0;   // Rfeset the index to the start of the new sequence
 
+  timerActive = true;           // Activate the timer
+  timerStart = millis();
 }
 // check if accelerometer value changed
 bool handleAccelerometer(void)
@@ -285,12 +326,11 @@ bool handleSlider(void)
     {
         if (previousSliderValue > sliderValue)
         {
-          myDFPlayer.volume(15);
+          myDFPlayer.volume(10);
         }
         if (previousSliderValue < sliderValue)
         {
-          myDFPlayer.volume(20
-          );
+          myDFPlayer.volume(25);
         }
 
         previousSliderValue = sliderValue;
@@ -445,8 +485,15 @@ void nextState() {
   
   lcd.clear();
   lcd.print("Get ready!");
-  lcd.print(states[successCount]);
+  lcd.setCursor(0, 1); // Set cursor to the first column of the second row
+  lcd.print("Round: ");
+  lcd.print(successCount);
+  //lcd.print(states[successCount]);
   delay(1000); // Optional delay to prepare the user for the next input
+
+  // Start the timer for the next round
+  timerActive = true;
+  timerStart = millis();  // Record the starting time
 }
 
 
@@ -472,11 +519,14 @@ void resetGame() {
   successCount = 0;   // Reset the index to the start of the new sequence
   myDFPlayer.volume(15);
   song = 1;
+  timerStart = millis();
+  timeLimit = 10000;      // Initial time limit in milliseconds (10 seconds)d
 }
 
 void gameRecap() {
     lcd.clear();
     lcd.print("You succeeded ");
+    lcd.setCursor(0, 1);
     lcd.print(successCount);
     lcd.print(" times!");
     delay(2500);
