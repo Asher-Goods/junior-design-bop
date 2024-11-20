@@ -35,7 +35,7 @@ int previousTwistyValue;
 int previousSliderValue;
 
 // game states
-const int num_rounds = 10;
+const int num_rounds = 99;
 enum GameState { PITCH_IT, TURN_IT_UP, SHOUT_IT, SPIN_IT };
 GameState states[num_rounds];// = { PITCH_IT, TURN_IT_UP, SHOUT_IT, SPIN_IT };
 int successCount = 0;
@@ -61,7 +61,7 @@ int countSpin = 0;
 unsigned long timerStart;   // Stores the time when the timer starts
 int timeLimit = 10000;      // Initial time limit in milliseconds (10 seconds)
 bool timerActive = false;   // Flag to indicate if the timer is running
-
+int seedValue;
 void setup()
 {
     mySerial.begin(9600);
@@ -250,14 +250,12 @@ int testValues(int expectedInput)
     if (expectedInput != 2 && handleSlider())
     {
       lcd.clear();
-      lcd.print("slider...");
       delay(2000);
       return 0; 
     }
     if (expectedInput != 5 && handleAccelerometer())
     {
       lcd.clear();
-      lcd.print("accel...");
       delay(2000);
       return 0; 
     }
@@ -353,17 +351,20 @@ void handleSpin()
 {
   switch(countSpin) {
       case 0 :
-      song = 5;
+        song = 5;
+        countSpin++;
       break;
       case 1 :
-      song = 8;
+        song = 8;
+        countSpin++;
       break;
       default :
       song = 1;
+      countSpin = 0;
       break;
     }
     myDFPlayer.play(song);
-    countSpin++;
+    
 }
 
 void handlePitchChange() {
@@ -451,7 +452,7 @@ void handlePitchChange() {
 // check if microphone passes threshold value
 bool handleMicrophone(void)
 {
-    float thresholdValue = 200.0;
+    float thresholdValue = 250.0;
     // float conversionValue = 5.0 / 1023.0;
     // float voltageThreshold = 2.2;
     // float microphoneVoltage = conversionValue * microphoneValue;
@@ -487,10 +488,17 @@ void nextState() {
   delay(1000); // Pause to allow the player to see the "Success!" message
   
   if (successCount >= num_rounds) {  // Check if the game has completed all rounds
+    lcd.clear();
+    lcd.print("You Win!");
+    myDFPlayer.play(11);
+    myDFPlayer.volume(30);
+    currentVolume = 30;
+    delay(3000);
     gameRecap();  // Show final recap
     resetGame();  // Reset the game
     return;       // Exit function to prevent further state transitions
   }
+
   
   lcd.clear();
   lcd.print("Get ready!");
@@ -508,6 +516,8 @@ void nextState() {
 
 // Randomize the order of states
 void randomizeStates() {
+  seedValue = analogRead(A2);
+  randomSeed(seedValue); 
   for (int i = 0; i < num_rounds; i++) {  // Loop through all indices up to num_rounds
     int randomIndex = random(0, 4);       // Generate a random index (0 to 3 inclusive)
     states[i] = (randomIndex);  // Assign a valid enum value
@@ -540,4 +550,3 @@ void gameRecap() {
     lcd.print(successCount);
     lcd.print(" times!");
     delay(2500);
-}
