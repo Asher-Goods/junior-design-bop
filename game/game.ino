@@ -92,6 +92,7 @@ void setup()
     }
 
     myDFPlayer.volume(15);
+    currentVolume = 15;
     song = 1;
     
     // initialize previous values 
@@ -101,7 +102,6 @@ void setup()
 void loop() {
   // Read input values
   readValues();
-
   // Check for reset
   if (resetValue == LOW) {
     if (!gameStart) {
@@ -131,7 +131,12 @@ void loop() {
 
     case TURN_IT_UP:
       lcd.clear();
-      lcd.print("Turn it up!");
+      if(currentVolume > 15) {
+        lcd.print("Turn it down!");
+      }
+      else {
+        lcd.print("Turn it up!");
+      }
       result = testValues(2);
       handleResult(result);
       break;
@@ -151,8 +156,6 @@ void loop() {
       break;
   }
 
-  
-
 
   if (timerActive) {
     unsigned long elapsedTime = millis() - timerStart;
@@ -161,6 +164,8 @@ void loop() {
       // Time ran out
       lcd.clear();
       lcd.print("Time's up!");
+      myDFPlayer.volume(30);
+      myDFPlayer.play(10);
       delay(2000);
       gameRecap();
       resetGame();
@@ -182,6 +187,8 @@ void handleResult(int result) {
   if (result == 0) { // Incorrect input
     lcd.clear();
     lcd.print("Wrong Input!");
+    myDFPlayer.volume(30);
+    myDFPlayer.play(10);
     delay(750);
     gameRecap();
     resetGame();
@@ -326,10 +333,12 @@ bool handleSlider(void)
     {
         if (previousSliderValue > sliderValue)
         {
+          currentVolume = 10;
           myDFPlayer.volume(10);
         }
         if (previousSliderValue < sliderValue)
         {
+          currentVolume = 25;
           myDFPlayer.volume(25);
         }
 
@@ -442,11 +451,11 @@ void handlePitchChange() {
 // check if microphone passes threshold value
 bool handleMicrophone(void)
 {
-    float thresholdValue = 100.0;
+    float thresholdValue = 200.0;
     // float conversionValue = 5.0 / 1023.0;
     // float voltageThreshold = 2.2;
     // float microphoneVoltage = conversionValue * microphoneValue;
-    return microphoneValue < thresholdValue;
+    return microphoneValue > thresholdValue;
 }
 
 // check if reset button was pressed
@@ -518,6 +527,7 @@ void resetGame() {
   gameStart = 0;
   successCount = 0;   // Reset the index to the start of the new sequence
   myDFPlayer.volume(15);
+  currentVolume = 15;
   song = 1;
   timerStart = millis();
   timeLimit = 10000;      // Initial time limit in milliseconds (10 seconds)d
